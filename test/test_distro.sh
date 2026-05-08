@@ -113,7 +113,8 @@ opensips-cli -x \\
   $SCHEMA_OPT \\
   database create _cli_test
 python3 -c \"
-import sqlalchemy
+import pymysql, sqlalchemy
+pymysql.install_as_MySQLdb()
 e = sqlalchemy.create_engine('${MYSQL_URL%/*}/_cli_test')
 tables = sqlalchemy.inspect(e).get_table_names()
 assert 'dialog' in tables, 'dialog table not found: ' + str(tables)
