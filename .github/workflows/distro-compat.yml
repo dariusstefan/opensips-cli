@@ -1,0 +1,68 @@
+---
+name: Distro compatibility
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - debian:bullseye
+          - debian:bookworm
+          - debian:trixie
+          - ubuntu:22.04
+          - ubuntu:24.04
+          - fedora:41
+          - fedora:42
+          - rockylinux:8
+          - rockylinux:9
+
+    services:
+      mysql:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: mysql
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mariadb-admin ping -h localhost -proot"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: root
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout OpenSIPS (for DB schema scripts)
+        uses: actions/checkout@v4
+        with:
+          repository: OpenSIPS/opensips
+          path: opensips
+
+      - name: Run distro test
+        env:
+          MYSQL_ADMIN_URL: mysql+pymysql://root:root@host.docker.internal/mysql
+          MYSQL_URL: mysql+pymysql://opensips:opensipsrw@host.docker.internal/opensips
+          PG_ADMIN_URL: postgresql://postgres:root@host.docker.internal/postgres
+          PG_URL: postgresql://opensips:opensipsrw@host.docker.internal/opensips
+          OPENSIPS_DB_PATH: ${{ github.workspace }}/opensips/scripts
+        run: bash test/test_distro.sh ${{ matrix.image }}
