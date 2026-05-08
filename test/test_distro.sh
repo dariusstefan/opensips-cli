@@ -55,7 +55,8 @@ if [ "$DISTRO_FAMILY" = "deb" ]; then
     PIP_FLAGS='$(pip3 install --help 2>&1 | grep -q break-system-packages && echo --break-system-packages || true)'
 else
     # install what's reliably available in base repos; use pip for the rest
-    INSTALL_SYS_PKGS="dnf install -y python3-pip python3-sqlalchemy python3-psycopg2 python3-pyOpenSSL && pip3 install PyMySQL"
+    # try system pyOpenSSL first (Rocky 8); fall back to pip (Rocky 9+, Fedora)
+    INSTALL_SYS_PKGS="dnf install -y python3-pip python3-sqlalchemy python3-psycopg2 && (dnf install -y python3-pyOpenSSL || pip3 install pyopenssl) && pip3 install PyMySQL"
     PIP_FLAGS=""
 fi
 
